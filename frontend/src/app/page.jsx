@@ -1,382 +1,504 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
+import {
+  ArrowRight,
+  BarChart3,
+  Bot,
+  Check,
+  ChevronRight,
+  FileSpreadsheet,
+  Lightbulb,
+  Menu,
+  Play,
+  Sparkles,
+  Table2,
+  Upload,
+  WandSparkles,
+  X,
+  Zap,
+} from "lucide-react";
 
 export default function Home() {
+  const [menuOpen, setMenuOpen] = React.useState(false);
+
   return (
-    <main className="min-h-screen bg-[#f7f9f7] text-gray-900">
+    <main className="min-h-screen overflow-hidden bg-[#111312] text-[#F5F3ED]">
 
       {/* ================= NAVBAR ================= */}
 
-      <nav className="sticky top-0 z-50 border-b border-gray-200 bg-white/95 backdrop-blur">
+      <header className="sticky top-0 z-50 border-b border-[#303733]/70 bg-[#111312]/90 backdrop-blur-xl">
 
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
 
           {/* Logo */}
-          <div className="flex items-center gap-3">
 
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#217346] text-xl font-bold text-white shadow-sm">
-              MO
+          <Link href="/" className="flex items-center gap-3">
+
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2F6B4F] shadow-lg shadow-[#2F6B4F]/20">
+              <Table2 size={21} strokeWidth={2} />
             </div>
 
             <div>
-              <h1 className="text-xl font-bold tracking-tight">
-                Moxcel<span className="text-[#217346]">AI</span>
-              </h1>
+              <div className="text-xl font-bold tracking-tight">
+                Moxcel<span className="text-[#F2A07B]">AI</span>
+              </div>
 
-              <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400">
+              <div className="text-[9px] uppercase tracking-[0.2em] text-[#929A94]">
                 Intelligent spreadsheets
-              </p>
+              </div>
             </div>
 
-          </div>
+          </Link>
 
 
-          {/* Navigation */}
+          {/* Desktop Navigation */}
 
-          <div className="hidden items-center gap-8 text-sm md:flex">
+          <nav className="hidden items-center gap-8 md:flex">
 
             <a
               href="#features"
-              className="font-medium text-gray-600 transition hover:text-[#217346]"
+              className="text-sm text-[#929A94] transition hover:text-[#F5F3ED]"
             >
               Features
             </a>
 
             <a
-              href="#workflow"
-              className="font-medium text-gray-600 transition hover:text-[#217346]"
+              href="#how-it-works"
+              className="text-sm text-[#929A94] transition hover:text-[#F5F3ED]"
             >
               How it works
             </a>
 
             <a
               href="#preview"
-              className="font-medium text-gray-600 transition hover:text-[#217346]"
+              className="text-sm text-[#929A94] transition hover:text-[#F5F3ED]"
             >
               Preview
             </a>
 
+          </nav>
+
+
+          {/* Desktop Actions */}
+
+          <div className="hidden items-center gap-3 md:flex">
+
+            <Link
+              href="/login"
+              className="rounded-lg px-4 py-2.5 text-sm font-medium text-[#C8CEC9] transition hover:text-white"
+            >
+              Log in
+            </Link>
+
+            <Link
+              href="/signup"
+              className="flex items-center gap-2 rounded-lg bg-[#2F6B4F] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#3A815D]"
+            >
+              Get started
+              <ArrowRight size={15} />
+            </Link>
+
           </div>
 
 
-          {/* Right */}
+          {/* Mobile Menu */}
 
-          <div className="flex items-center gap-3">
-
-            <button className="hidden px-3 py-2 text-sm font-medium text-gray-600 hover:text-[#217346] sm:block">
-              Login
-            </button>
-
-            <button className="rounded-lg bg-[#217346] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#185c37]">
-              Open MoxcelAI
-            </button>
-
-          </div>
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="rounded-lg border border-[#303733] p-2 text-[#C8CEC9] md:hidden"
+          >
+            {menuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
 
         </div>
 
-      </nav>
+
+        {/* Mobile Navigation */}
+
+        {menuOpen && (
+
+          <div className="border-t border-[#303733] bg-[#111312] px-6 py-5 md:hidden">
+
+            <div className="flex flex-col gap-4">
+
+              <a href="#features" className="text-[#C8CEC9]">
+                Features
+              </a>
+
+              <a href="#how-it-works" className="text-[#C8CEC9]">
+                How it works
+              </a>
+
+              <a href="#preview" className="text-[#C8CEC9]">
+                Preview
+              </a>
+
+              <Link href="/login" className="text-[#C8CEC9]">
+                Log in
+              </Link>
+
+              <Link
+                href="/signup"
+                className="rounded-lg bg-[#2F6B4F] px-4 py-3 text-center font-semibold"
+              >
+                Get started
+              </Link>
+
+            </div>
+
+          </div>
+
+        )}
+
+      </header>
 
 
       {/* ================= HERO ================= */}
 
-      <section className="relative overflow-hidden">
+      <section className="relative">
 
-        {/* Spreadsheet Grid Background */}
+        {/* Green glow */}
 
-        <div className="absolute inset-0 opacity-40">
+        <div className="absolute left-1/2 top-[-200px] h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-[#2F6B4F]/15 blur-[120px]" />
 
-          <div
-            className="h-full w-full"
-            style={{
-              backgroundImage: `
-                linear-gradient(#dfe7e1 1px, transparent 1px),
-                linear-gradient(90deg, #dfe7e1 1px, transparent 1px)
-              `,
-              backgroundSize: "40px 40px",
-            }}
-          />
+        {/* Peach glow */}
 
-        </div>
+        <div className="absolute right-[-150px] top-[300px] h-[350px] w-[350px] rounded-full bg-[#F2A07B]/8 blur-[120px]" />
 
 
-        <div className="relative mx-auto max-w-7xl px-6 pb-24 pt-20">
+        <div className="relative mx-auto max-w-7xl px-6 pb-24 pt-24 lg:pb-32 lg:pt-32">
 
-          <div className="grid items-center gap-14 lg:grid-cols-2">
+          {/* Badge */}
+
+          <div className="mb-8 flex justify-center">
+
+            <div className="flex items-center gap-2 rounded-full border border-[#2F6B4F]/50 bg-[#2F6B4F]/10 px-4 py-2 text-xs font-medium text-[#A9C7B4]">
+
+              <Sparkles size={14} className="text-[#F2A07B]" />
+
+              AI-powered spreadsheet workspace
+
+            </div>
+
+          </div>
 
 
-            {/* LEFT */}
+          {/* Heading */}
 
-            <div>
+          <div className="mx-auto max-w-4xl text-center">
 
-              {/* Small Label */}
+            <h1 className="text-5xl font-bold leading-[1.05] tracking-[-0.04em] sm:text-6xl lg:text-7xl">
 
-              <div className="mb-6 inline-flex items-center gap-2 rounded-md border border-[#b7d8c3] bg-white px-3 py-2 text-sm font-medium text-[#217346] shadow-sm">
+              Your spreadsheet.
 
-                <span className="flex h-5 w-5 items-center justify-center rounded bg-[#217346] text-xs text-white">
-                  ✦
-                </span>
+              <br />
 
-                AI for your spreadsheets
+              <span className="text-[#F2A07B]">
+                Smarter with AI.
+              </span>
+
+            </h1>
+
+
+            <p className="mx-auto mt-7 max-w-2xl text-base leading-7 text-[#929A94] sm:text-lg">
+
+              Upload your spreadsheet, describe what you want,
+              and let MoxcelAI handle the formulas, data,
+              analysis and insights.
+
+            </p>
+
+
+            {/* CTA */}
+
+            <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+
+              <Link
+                href="/signup"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#2F6B4F] px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#2F6B4F]/20 transition hover:bg-[#3A815D] sm:w-auto"
+              >
+                Start with MoxcelAI
+                <ArrowRight size={17} />
+              </Link>
+
+
+              <a
+                href="#preview"
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#303733] bg-[#191C1A] px-6 py-3.5 text-sm font-semibold text-[#D4D8D4] transition hover:border-[#4A544F] hover:bg-[#202522] sm:w-auto"
+              >
+                <Play size={15} />
+                See how it works
+              </a>
+
+            </div>
+
+          </div>
+
+
+          {/* ================= AI COMMAND ================= */}
+
+          <div className="relative mx-auto mt-20 max-w-4xl">
+
+            <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#2F6B4F]/20 via-[#F2A07B]/10 to-[#2F6B4F]/20 blur-xl" />
+
+            <div className="relative rounded-2xl border border-[#303733] bg-[#191C1A] p-3 shadow-2xl shadow-black/30">
+
+              <div className="flex items-center gap-3 rounded-xl border border-[#303733] bg-[#111312] px-4 py-4">
+
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#2F6B4F]/15 text-[#F2A07B]">
+                  <WandSparkles size={18} />
+                </div>
+
+                <div className="flex-1 text-sm text-[#929A94]">
+
+                  <span className="hidden sm:inline">
+                    Ask MoxcelAI anything about your spreadsheet...
+                  </span>
+
+                  <span className="sm:hidden">
+                    Ask MoxcelAI...
+                  </span>
+
+                </div>
+
+                <button className="rounded-lg bg-[#2F6B4F] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#3A815D]">
+                  Run
+                </button>
 
               </div>
 
 
-              {/* Heading */}
+              {/* Example commands */}
 
-              <h2 className="max-w-2xl text-5xl font-bold leading-[1.08] tracking-tight text-gray-900 md:text-6xl">
+              <div className="flex flex-wrap gap-2 px-2 pb-1 pt-3">
 
-                Work with Excel
-                <span className="text-[#217346]">
-                  {" "}without doing everything manually.
-                </span>
+                {[
+                  "Calculate total revenue",
+                  "Find duplicate rows",
+                  "Create a profit summary",
+                ].map((item) => (
 
-              </h2>
-
-
-              {/* Description */}
-
-              <p className="mt-6 max-w-xl text-lg leading-8 text-gray-600">
-
-                Upload your spreadsheet and tell SheetAI what you need.
-                Create formulas, clean data, analyze numbers and generate
-                insights using simple instructions.
-
-              </p>
-
-
-              {/* AI Command */}
-
-              <div className="mt-8 max-w-xl rounded-xl border border-gray-200 bg-white p-2 shadow-lg shadow-gray-200/50">
-
-                <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-[#fafcfb] px-4 py-3">
-
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#217346] text-sm text-white">
-                    ✦
-                  </div>
-
-                  <span className="flex-1 text-sm text-gray-500">
-                    "Calculate total sales and sort by highest..."
-                  </span>
-
-                  <button className="rounded-md bg-[#217346] px-4 py-2 text-sm font-semibold text-white hover:bg-[#185c37]">
-                    Run
+                  <button
+                    key={item}
+                    className="rounded-md border border-[#303733] px-3 py-1.5 text-[11px] text-[#929A94] transition hover:border-[#F2A07B]/40 hover:text-[#F2A07B]"
+                  >
+                    {item}
                   </button>
 
+                ))}
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      {/* ================= SPREADSHEET PREVIEW ================= */}
+
+      <section id="preview" className="relative px-6 pb-28">
+
+        <div className="mx-auto max-w-6xl">
+
+          <div className="mb-8 text-center">
+
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#F2A07B]">
+              Your workspace
+            </p>
+
+            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+              A spreadsheet with intelligence built in.
+            </h2>
+
+          </div>
+
+
+          {/* Spreadsheet */}
+
+          <div className="overflow-hidden rounded-2xl border border-[#303733] bg-[#191C1A] shadow-2xl shadow-black/30">
+
+            {/* Toolbar */}
+
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#303733] px-5 py-4">
+
+              <div className="flex items-center gap-3">
+
+                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#2F6B4F]">
+                  <FileSpreadsheet size={16} />
+                </div>
+
+                <div>
+                  <p className="text-sm font-semibold">
+                    Sales_Report.xlsx
+                  </p>
+
+                  <p className="text-[10px] text-[#929A94]">
+                    Last edited just now
+                  </p>
                 </div>
 
               </div>
 
 
-              {/* Buttons */}
+              <div className="flex items-center gap-2">
 
-              <div className="mt-6 flex flex-wrap gap-3">
-
-                <button className="rounded-lg bg-[#217346] px-6 py-3 font-semibold text-white shadow-sm transition hover:bg-[#185c37]">
-                  Upload Excel File
+                <button className="rounded-md border border-[#303733] p-2 text-[#929A94] hover:text-white">
+                  <Upload size={15} />
                 </button>
 
-                <button className="rounded-lg border border-gray-300 bg-white px-6 py-3 font-semibold text-gray-700 transition hover:border-[#217346] hover:text-[#217346]">
-                  Explore Demo
+                <button className="flex items-center gap-2 rounded-md bg-[#2F6B4F] px-3 py-2 text-xs font-semibold">
+                  <Sparkles size={13} />
+                  Ask AI
                 </button>
-
-              </div>
-
-
-              {/* Trust */}
-
-              <div className="mt-7 flex items-center gap-6 text-sm text-gray-500">
-
-                <span>✓ Excel compatible</span>
-
-                <span>✓ AI powered</span>
-
-                <span>✓ Easy to use</span>
 
               </div>
 
             </div>
 
 
-            {/* RIGHT — SPREADSHEET */}
+            {/* Formula bar */}
 
-            <div
-              id="preview"
-              className="relative"
-            >
+            <div className="flex items-center gap-3 border-b border-[#303733] bg-[#111312] px-4 py-3">
 
-              {/* Floating AI Card */}
+              <span className="text-xs font-semibold text-[#F2A07B]">
+                fx
+              </span>
 
-              <div className="absolute -right-3 -top-7 z-20 w-56 rounded-xl border border-gray-200 bg-white p-4 shadow-xl">
-
-                <div className="flex items-center gap-2">
-
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#e8f4ec] text-[#217346]">
-                    ✦
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-semibold text-gray-900">
-                      AI Suggestion
-                    </p>
-
-                    <p className="text-[10px] text-gray-500">
-                      Formula detected
-                    </p>
-                  </div>
-
-                </div>
-
-                <div className="mt-3 rounded-md bg-gray-50 px-3 py-2 font-mono text-xs text-[#217346]">
-                  =SUM(E2:E25)
-                </div>
-
+              <div className="h-7 flex-1 rounded border border-[#303733] px-3 py-1.5 text-xs text-[#C8CEC9]">
+                =SUM(B2:B8)
               </div>
 
-
-              {/* Spreadsheet Window */}
-
-              <div className="overflow-hidden rounded-xl border border-gray-300 bg-white shadow-2xl shadow-gray-300/50">
-
-                {/* Top Bar */}
-
-                <div className="flex items-center justify-between border-b border-gray-200 bg-[#f3f6f4] px-4 py-3">
-
-                  <div className="flex items-center gap-2">
-
-                    <div className="flex h-7 w-7 items-center justify-center rounded bg-[#217346] text-xs font-bold text-white">
-                      S
-                    </div>
-
-                    <span className="text-sm font-semibold">
-                      sales_data.xlsx
-                    </span>
-
-                  </div>
-
-                  <button className="rounded-md bg-[#217346] px-3 py-1.5 text-xs font-semibold text-white">
-                    ✦ AI Assist
-                  </button>
-
-                </div>
+            </div>
 
 
-                {/* Formula Bar */}
+            {/* Table */}
 
-                <div className="flex border-b border-gray-200">
+            <div className="overflow-x-auto">
 
-                  <div className="flex w-14 items-center justify-center border-r border-gray-200 bg-gray-50 text-xs text-gray-500">
-                    E2
-                  </div>
+              <table className="w-full min-w-[650px] border-collapse text-left text-xs">
 
-                  <div className="flex-1 px-3 py-2 font-mono text-xs text-gray-600">
-                    =SUM(C2:D2)
-                  </div>
+                <thead>
 
-                </div>
+                  <tr className="bg-[#151816] text-[#929A94]">
 
+                    <th className="w-12 border-b border-r border-[#303733] px-4 py-3">
+                      #
+                    </th>
 
-                {/* Spreadsheet */}
+                    <th className="border-b border-r border-[#303733] px-4 py-3">
+                      Product
+                    </th>
 
-                <div className="overflow-x-auto">
+                    <th className="border-b border-r border-[#303733] px-4 py-3">
+                      Sales
+                    </th>
 
-                  <table className="w-full min-w-[550px] border-collapse text-xs">
+                    <th className="border-b border-r border-[#303733] px-4 py-3">
+                      Profit
+                    </th>
 
-                    <thead>
+                    <th className="border-b border-[#303733] px-4 py-3">
+                      Region
+                    </th>
 
-                      <tr className="bg-[#f3f6f4]">
+                  </tr>
 
-                        <th className="w-10 border border-gray-200 px-2 py-2 text-gray-400">
-                          #
-                        </th>
-
-                        <th className="border border-gray-200 px-4 py-2 text-left font-semibold text-gray-600">
-                          Customer
-                        </th>
-
-                        <th className="border border-gray-200 px-4 py-2 text-left font-semibold text-gray-600">
-                          Product
-                        </th>
-
-                        <th className="border border-gray-200 px-4 py-2 text-left font-semibold text-gray-600">
-                          Quantity
-                        </th>
-
-                        <th className="border border-gray-200 px-4 py-2 text-left font-semibold text-gray-600">
-                          Sales
-                        </th>
-
-                      </tr>
-
-                    </thead>
+                </thead>
 
 
-                    <tbody>
+                <tbody>
 
-                      {[
-                        ["1", "Rahul Sharma", "Laptop", "2", "₹1,30,000"],
-                        ["2", "Priya Singh", "Monitor", "3", "₹54,000"],
-                        ["3", "Aman Verma", "Keyboard", "5", "₹12,500"],
-                        ["4", "Neha Gupta", "Laptop", "1", "₹65,000"],
-                        ["5", "Arjun Mehta", "Mouse", "8", "₹8,000"],
-                        ["6", "Sneha Kapoor", "Laptop", "3", "₹1,95,000"],
-                      ].map((row, index) => (
+                  {[
+                    ["1", "Laptop", "₹85,000", "₹12,400", "North"],
+                    ["2", "Smartphone", "₹45,000", "₹8,200", "South"],
+                    ["3", "Monitor", "₹32,000", "₹6,700", "East"],
+                    ["4", "Keyboard", "₹12,000", "₹3,100", "West"],
+                    ["5", "Headphones", "₹18,500", "₹4,250", "North"],
+                  ].map((row, index) => (
 
-                        <tr
-                          key={index}
-                          className="group transition hover:bg-[#f1f8f3]"
+                    <tr
+                      key={index}
+                      className="transition hover:bg-[#202522]"
+                    >
+
+                      {row.map((cell, cellIndex) => (
+
+                        <td
+                          key={cellIndex}
+                          className={`border-b border-r border-[#303733] px-4 py-3.5 ${
+                            cellIndex === 2
+                              ? "text-[#A9C7B4]"
+                              : cellIndex === 3
+                              ? "text-[#F2A07B]"
+                              : "text-[#C8CEC9]"
+                          }`}
                         >
-
-                          {row.map((cell, cellIndex) => (
-
-                            <td
-                              key={cellIndex}
-                              className={`border border-gray-200 px-4 py-3 ${
-                                cellIndex === 4
-                                  ? "font-semibold text-[#217346]"
-                                  : "text-gray-600"
-                              }`}
-                            >
-                              {cell}
-                            </td>
-
-                          ))}
-
-                        </tr>
+                          {cell}
+                        </td>
 
                       ))}
 
-                    </tbody>
+                    </tr>
 
-                  </table>
+                  ))}
 
+                </tbody>
+
+              </table>
+
+            </div>
+
+
+            {/* AI Result */}
+
+            <div className="border-t border-[#303733] bg-[#151816] px-5 py-4">
+
+              <div className="flex gap-3">
+
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F2A07B]/10 text-[#F2A07B]">
+                  <Bot size={17} />
                 </div>
 
+                <div>
 
-                {/* Sheet Tabs */}
+                  <p className="text-xs font-semibold text-[#F2A07B]">
+                    MoxcelAI insight
+                  </p>
 
-                <div className="flex items-center gap-1 border-t border-gray-200 bg-[#f5f7f6] px-3 pt-2">
-
-                  <div className="rounded-t-md border border-b-0 border-gray-200 bg-white px-5 py-2 text-xs font-semibold text-[#217346]">
-                    Sales
-                  </div>
-
-                  <div className="px-5 py-2 text-xs text-gray-500">
-                    Customers
-                  </div>
-
-                  <div className="px-5 py-2 text-xs text-gray-500">
-                    Summary
-                  </div>
-
-                  <div className="px-3 py-2 text-gray-400">
-                    +
-                  </div>
+                  <p className="mt-1 text-xs leading-5 text-[#929A94]">
+                    Profit margin is highest in the North region.
+                    I also detected 2 products with unusually high
+                    sales growth.
+                  </p>
 
                 </div>
 
               </div>
+
+            </div>
+
+
+            {/* Sheet tabs */}
+
+            <div className="flex items-center gap-1 border-t border-[#303733] bg-[#111312] px-3 py-2">
+
+              <button className="rounded-md bg-[#2F6B4F]/20 px-4 py-2 text-[11px] font-medium text-[#A9C7B4]">
+                Sales
+              </button>
+
+              <button className="rounded-md px-4 py-2 text-[11px] text-[#929A94] hover:bg-[#191C1A]">
+                Summary
+              </button>
+
+              <button className="rounded-md px-4 py-2 text-[11px] text-[#929A94] hover:bg-[#191C1A]">
+                Analysis
+              </button>
 
             </div>
 
@@ -389,109 +511,79 @@ export default function Home() {
 
       {/* ================= FEATURES ================= */}
 
-      <section
-        id="features"
-        className="border-t border-gray-200 bg-white px-6 py-24"
-      >
+      <section id="features" className="border-y border-[#303733] bg-[#151816] px-6 py-24">
 
         <div className="mx-auto max-w-7xl">
 
-          <div className="mb-14">
+          <div className="max-w-2xl">
 
-            <p className="mb-3 text-sm font-bold uppercase tracking-widest text-[#217346]">
-              What SheetAI can do
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#F2A07B]">
+              What MoxcelAI does
             </p>
 
-            <h2 className="text-4xl font-bold tracking-tight md:text-5xl">
-              Your spreadsheet,
-              <br />
-              with an intelligent layer.
+            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+              Stop fighting with spreadsheets.
             </h2>
+
+            <p className="mt-4 text-[#929A94]">
+              Let AI handle the repetitive work while you focus on
+              understanding your data.
+            </p>
 
           </div>
 
 
-          <div className="grid gap-5 md:grid-cols-4">
+          <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
 
+            {[
+              {
+                icon: WandSparkles,
+                title: "AI formulas",
+                text: "Describe the calculation you need and let AI create the formula.",
+              },
+              {
+                icon: Table2,
+                title: "Data cleaning",
+                text: "Find duplicates, missing values and inconsistent data automatically.",
+              },
+              {
+                icon: BarChart3,
+                title: "Smart analysis",
+                text: "Turn raw spreadsheet data into useful summaries and analysis.",
+              },
+              {
+                icon: Lightbulb,
+                title: "AI insights",
+                text: "Discover trends and patterns hidden inside your spreadsheet.",
+              },
+            ].map((feature) => {
 
-            {/* Card */}
+              const Icon = feature.icon;
 
-            <div className="rounded-xl border border-gray-200 bg-[#fafcfb] p-6 transition hover:-translate-y-1 hover:border-[#9bc8aa] hover:shadow-lg">
+              return (
 
-              <div className="mb-8 text-3xl">
-                ƒx
-              </div>
+                <div
+                  key={feature.title}
+                  className="group rounded-2xl border border-[#303733] bg-[#191C1A] p-6 transition hover:-translate-y-1 hover:border-[#F2A07B]/30"
+                >
 
-              <h3 className="text-lg font-bold">
-                Generate formulas
-              </h3>
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#2F6B4F]/15 text-[#A9C7B4] transition group-hover:bg-[#F2A07B]/10 group-hover:text-[#F2A07B]">
+                    <Icon size={21} />
+                  </div>
 
-              <p className="mt-3 text-sm leading-6 text-gray-500">
-                Explain what you want to calculate and let AI create
-                the formula for you.
-              </p>
+                  <h3 className="mt-5 font-semibold">
+                    {feature.title}
+                  </h3>
 
-            </div>
+                  <p className="mt-2 text-sm leading-6 text-[#929A94]">
+                    {feature.text}
+                  </p>
 
+                </div>
 
-            {/* Card */}
+              );
 
-            <div className="rounded-xl border border-gray-200 bg-[#fafcfb] p-6 transition hover:-translate-y-1 hover:border-[#9bc8aa] hover:shadow-lg">
-
-              <div className="mb-8 text-3xl">
-                ⇅
-              </div>
-
-              <h3 className="text-lg font-bold">
-                Clean & transform
-              </h3>
-
-              <p className="mt-3 text-sm leading-6 text-gray-500">
-                Sort, filter, organize and transform large amounts
-                of spreadsheet data.
-              </p>
-
-            </div>
-
-
-            {/* Card */}
-
-            <div className="rounded-xl border border-gray-200 bg-[#fafcfb] p-6 transition hover:-translate-y-1 hover:border-[#9bc8aa] hover:shadow-lg">
-
-              <div className="mb-8 text-3xl">
-                ◫
-              </div>
-
-              <h3 className="text-lg font-bold">
-                Analyze data
-              </h3>
-
-              <p className="mt-3 text-sm leading-6 text-gray-500">
-                Ask questions about your spreadsheet and get
-                meaningful answers.
-              </p>
-
-            </div>
-
-
-            {/* Card */}
-
-            <div className="rounded-xl border border-gray-200 bg-[#fafcfb] p-6 transition hover:-translate-y-1 hover:border-[#9bc8aa] hover:shadow-lg">
-
-              <div className="mb-8 text-3xl">
-                ↗
-              </div>
-
-              <h3 className="text-lg font-bold">
-                Find insights
-              </h3>
-
-              <p className="mt-3 text-sm leading-6 text-gray-500">
-                Discover trends, unusual values and important
-                patterns in your data.
-              </p>
-
-            </div>
+            })}
 
           </div>
 
@@ -500,64 +592,84 @@ export default function Home() {
       </section>
 
 
-      {/* ================= WORKFLOW ================= */}
+      {/* ================= HOW IT WORKS ================= */}
 
-      <section
-        id="workflow"
-        className="bg-[#f3f7f4] px-6 py-24"
-      >
+      <section id="how-it-works" className="px-6 py-24">
 
         <div className="mx-auto max-w-7xl">
 
           <div className="text-center">
 
-            <p className="mb-3 text-sm font-bold uppercase tracking-widest text-[#217346]">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#F2A07B]">
               Simple workflow
             </p>
 
-            <h2 className="text-4xl font-bold">
-              Just tell your spreadsheet what to do.
+            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+              From spreadsheet to insight.
             </h2>
 
           </div>
 
 
-          <div className="mt-16 grid gap-5 md:grid-cols-5">
+          <div className="mt-14 grid gap-5 md:grid-cols-4">
 
             {[
-              ["01", "Upload", "Drop your Excel file"],
-              ["02", "Ask", "Write your request"],
-              ["03", "Understand", "AI reads your data"],
-              ["04", "Apply", "Changes happen automatically"],
-              ["05", "Export", "Download your result"],
-            ].map(([number, title, description], index) => (
+              {
+                number: "01",
+                icon: Upload,
+                title: "Upload",
+                text: "Drop your Excel file into MoxcelAI.",
+              },
+              {
+                number: "02",
+                icon: WandSparkles,
+                title: "Describe",
+                text: "Tell AI what you want in natural language.",
+              },
+              {
+                number: "03",
+                icon: Zap,
+                title: "Process",
+                text: "MoxcelAI works with your spreadsheet.",
+              },
+              {
+                number: "04",
+                icon: Lightbulb,
+                title: "Understand",
+                text: "Get formulas, results and useful insights.",
+              },
+            ].map((step) => {
 
-              <div
-                key={number}
-                className="relative rounded-xl border border-gray-200 bg-white p-6"
-              >
+              const Icon = step.icon;
 
-                <span className="text-xs font-bold text-[#217346]">
-                  {number}
-                </span>
+              return (
 
-                <h3 className="mt-5 font-bold">
-                  {title}
-                </h3>
+                <div
+                  key={step.number}
+                  className="relative rounded-2xl border border-[#303733] bg-[#191C1A] p-6"
+                >
 
-                <p className="mt-2 text-sm leading-6 text-gray-500">
-                  {description}
-                </p>
+                  <span className="text-xs font-bold text-[#F2A07B]">
+                    {step.number}
+                  </span>
 
-                {index < 4 && (
-                  <div className="absolute -right-3 top-1/2 hidden text-gray-300 md:block">
-                    →
+                  <div className="mt-6 flex h-10 w-10 items-center justify-center rounded-lg bg-[#2F6B4F]/15 text-[#A9C7B4]">
+                    <Icon size={19} />
                   </div>
-                )}
 
-              </div>
+                  <h3 className="mt-5 font-semibold">
+                    {step.title}
+                  </h3>
 
-            ))}
+                  <p className="mt-2 text-sm leading-6 text-[#929A94]">
+                    {step.text}
+                  </p>
+
+                </div>
+
+              );
+
+            })}
 
           </div>
 
@@ -566,28 +678,44 @@ export default function Home() {
       </section>
 
 
-      {/* ================= FINAL CTA ================= */}
+      {/* ================= CTA ================= */}
 
-      <section className="bg-white px-6 py-24">
+      <section className="px-6 pb-24">
 
-        <div className="mx-auto max-w-5xl overflow-hidden rounded-2xl bg-[#217346] px-8 py-16 text-center text-white md:px-20">
+        <div className="mx-auto max-w-5xl overflow-hidden rounded-3xl border border-[#303733] bg-[#191C1A]">
 
-          <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-white/15 text-xl">
-            ✦
+          <div className="relative px-6 py-16 text-center sm:px-12">
+
+            <div className="absolute left-1/2 top-0 h-48 w-96 -translate-x-1/2 rounded-full bg-[#2F6B4F]/15 blur-3xl" />
+
+            <div className="relative">
+
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-[#F2A07B]/10 text-[#F2A07B]">
+                <Sparkles size={22} />
+              </div>
+
+              <h2 className="mt-6 text-3xl font-bold tracking-tight sm:text-4xl">
+                Give your spreadsheets
+                <br />
+                a smarter workflow.
+              </h2>
+
+              <p className="mx-auto mt-4 max-w-xl text-[#929A94]">
+                Upload your first spreadsheet and experience a
+                faster way to work with data.
+              </p>
+
+              <Link
+                href="/signup"
+                className="mx-auto mt-8 flex w-fit items-center gap-2 rounded-lg bg-[#2F6B4F] px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-[#3A815D]"
+              >
+                Get started with MoxcelAI
+                <ArrowRight size={16} />
+              </Link>
+
+            </div>
+
           </div>
-
-          <h2 className="text-4xl font-bold md:text-5xl">
-            Let AI handle the spreadsheet work.
-          </h2>
-
-          <p className="mx-auto mt-5 max-w-xl text-green-100">
-            Upload a file, write a command and see your spreadsheet
-            transform in seconds.
-          </p>
-
-          <button className="mt-8 rounded-lg bg-white px-7 py-3 font-semibold text-[#217346] shadow-sm transition hover:bg-green-50">
-            Upload your first spreadsheet →
-          </button>
 
         </div>
 
@@ -596,33 +724,25 @@ export default function Home() {
 
       {/* ================= FOOTER ================= */}
 
-      <footer className="border-t border-gray-200 bg-[#fafafa]">
+      <footer className="border-t border-[#303733] px-6 py-8">
 
-        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-5 px-6 py-8 text-sm text-gray-500 md:flex-row">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
 
-          <div>
-            <span className="font-semibold text-gray-700">
-              MoxcelAI
+          <div className="flex items-center gap-2">
+
+            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[#2F6B4F]">
+              <Table2 size={14} />
+            </div>
+
+            <span className="text-sm font-semibold">
+              Moxcel<span className="text-[#F2A07B]">AI</span>
             </span>
 
-            <span className="ml-2">
-              Intelligent spreadsheet automation
-            </span>
           </div>
 
-          <div className="flex gap-6">
-            <span className="cursor-pointer hover:text-[#217346]">
-              Privacy
-            </span>
-
-            <span className="cursor-pointer hover:text-[#217346]">
-              Terms
-            </span>
-
-            <span className="cursor-pointer hover:text-[#217346]">
-              Contact
-            </span>
-          </div>
+          <p className="text-xs text-[#6F7973]">
+            AI-powered spreadsheet workspace
+          </p>
 
         </div>
 
