@@ -1,553 +1,1182 @@
 "use client";
 
-import React from "react";
-import Link from "next/link";
+import { useState, useRef } from "react";
 import {
   ArrowLeft,
-  ArrowRight,
-  Bot,
-  Check,
-  ChevronDown,
-  Clipboard,
-  Copy,
+  Upload,
   FileSpreadsheet,
-  History,
-  Lightbulb,
-  Menu,
   Sparkles,
-  Table2,
   WandSparkles,
+  Download,
+  Copy,
+  Check,
   X,
-  Zap,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  FileUp,
+  Calculator,
 } from "lucide-react";
 
-export default function FormulaGenerator() {
-  const [menuOpen, setMenuOpen] = React.useState(false);
-  const [description, setDescription] = React.useState("");
-  const [cellRange, setCellRange] = React.useState("B2:B100");
-  const [platform, setPlatform] = React.useState("Excel");
-  const [formula, setFormula] = React.useState("");
-  const [copied, setCopied] = React.useState(false);
-  const [loading, setLoading] = React.useState(false);
 
-  const examples = [
-    "Calculate total sales",
-    "Find the average of column B",
-    "Find duplicate values",
-    "Calculate profit margin",
-  ];
+// =====================================================
+// BACKEND URL
+// =====================================================
 
-  const generateFormula = () => {
-    if (!description.trim()) return;
+const API_URL = "http://localhost:5000";
 
-    setLoading(true);
-    setFormula("");
 
-    setTimeout(() => {
-      const text = description.toLowerCase();
+// =====================================================
+// EXAMPLE PROMPTS
+// These are only instructions.
+// They are NOT fake spreadsheet data.
+// =====================================================
 
-      let generated = "=SUM(B2:B100)";
+const examplePrompts = [
+  "Calculate the total sales.",
+  "Calculate the average of the sales column.",
+  "Find the highest sales value.",
+  "Find the lowest sales value.",
+  "Count the number of products.",
+  "Calculate the total profit.",
+];
 
-      if (text.includes("average") || text.includes("mean")) {
-        generated = "=AVERAGE(B2:B100)";
-      } else if (
-        text.includes("maximum") ||
-        text.includes("highest") ||
-        text.includes("max")
-      ) {
-        generated = "=MAX(B2:B100)";
-      } else if (
-        text.includes("minimum") ||
-        text.includes("lowest") ||
-        text.includes("min")
-      ) {
-        generated = "=MIN(B2:B100)";
-      } else if (
-        text.includes("count") ||
-        text.includes("number of")
-      ) {
-        generated = "=COUNT(B2:B100)";
-      } else if (
-        text.includes("duplicate")
-      ) {
-        generated =
-          '=IF(COUNTIF(B:B,B2)>1,"Duplicate","Unique")';
-      } else if (
-        text.includes("profit margin")
-      ) {
-        generated =
-          "=IFERROR((Revenue-Cost)/Revenue,0)";
-      }
 
-      setFormula(generated);
-      setLoading(false);
-    }, 700);
+// =====================================================
+// COMPONENT
+// =====================================================
+
+export default function FormulaPage() {
+
+  // ===================================================
+  // STATES
+  // ===================================================
+
+  const [file, setFile] =
+    useState(null);
+
+  const [instruction, setInstruction] =
+    useState("");
+
+  const [isProcessing, setIsProcessing] =
+    useState(false);
+
+  const [result, setResult] =
+    useState(null);
+
+  const [error, setError] =
+    useState("");
+
+  const [copied, setCopied] =
+    useState(false);
+
+  const fileInputRef =
+    useRef(null);
+
+
+  // ===================================================
+  // FILE SELECT
+  // ===================================================
+
+  const handleFileChange = (event) => {
+
+    const selectedFile =
+      event.target.files?.[0];
+
+    if (!selectedFile) {
+      return;
+    }
+
+
+    // Clear previous result/error
+    setResult(null);
+    setError("");
+
+
+    // Check extension
+
+    const fileName =
+      selectedFile.name.toLowerCase();
+
+    const validFile =
+      fileName.endsWith(".xlsx") ||
+      fileName.endsWith(".xls");
+
+
+    if (!validFile) {
+
+      setError(
+        "Please select an Excel file (.xlsx or .xls)."
+      );
+
+      event.target.value = "";
+
+      return;
+    }
+
+
+    // Check size
+    // 10 MB maximum
+
+    const maxSize =
+      10 * 1024 * 1024;
+
+
+    if (
+      selectedFile.size >
+      maxSize
+    ) {
+
+      setError(
+        "File size must be less than 10 MB."
+      );
+
+      event.target.value = "";
+
+      return;
+    }
+
+
+    setFile(
+      selectedFile
+    );
   };
+
+
+  // ===================================================
+  // REMOVE FILE
+  // ===================================================
+
+  const removeFile = () => {
+
+    setFile(null);
+    setResult(null);
+    setError("");
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+
+  // ===================================================
+  // OPEN FILE PICKER
+  // ===================================================
+
+  const openFilePicker = () => {
+
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+
+  // ===================================================
+  // SELECT EXAMPLE
+  // ===================================================
+
+  const selectExample = (text) => {
+
+    setInstruction(text);
+
+    setError("");
+  };
+
+
+  // ===================================================
+  // COPY FORMULA
+  // ===================================================
 
   const copyFormula = async () => {
-    if (!formula) return;
 
-    await navigator.clipboard.writeText(formula);
-    setCopied(true);
+    if (!result?.formula) {
+      return;
+    }
 
-    setTimeout(() => {
-      setCopied(false);
-    }, 1800);
+
+    try {
+
+      await navigator.clipboard.writeText(
+        result.formula
+      );
+
+      setCopied(true);
+
+
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+
+    } catch (error) {
+
+      console.error(
+        "Copy failed:",
+        error
+      );
+    }
   };
 
+
+  // ===================================================
+  // DOWNLOAD MODIFIED EXCEL
+  // ===================================================
+
+  const downloadFile = () => {
+
+    if (
+      !result?.fileBase64
+    ) {
+      return;
+    }
+
+
+    try {
+
+      // Convert Base64 → binary
+
+      const binaryString =
+        window.atob(
+          result.fileBase64
+        );
+
+
+      const length =
+        binaryString.length;
+
+
+      const bytes =
+        new Uint8Array(
+          length
+        );
+
+
+      for (
+        let i = 0;
+        i < length;
+        i++
+      ) {
+
+        bytes[i] =
+          binaryString.charCodeAt(i);
+
+      }
+
+
+      // Create Excel Blob
+
+      const blob =
+        new Blob(
+          [bytes],
+          {
+            type:
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          }
+        );
+
+
+      // Create temporary URL
+
+      const url =
+        window.URL.createObjectURL(
+          blob
+        );
+
+
+      // Create download link
+
+      const link =
+        document.createElement("a");
+
+      link.href = url;
+
+      link.download =
+        result.fileName ||
+        "MoxelAI_Updated.xlsx";
+
+
+      document.body.appendChild(
+        link
+      );
+
+
+      link.click();
+
+
+      // Cleanup
+
+      document.body.removeChild(
+        link
+      );
+
+      window.URL.revokeObjectURL(
+        url
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Download failed:",
+        error
+      );
+
+      setError(
+        "Unable to download the modified Excel file."
+      );
+    }
+  };
+
+
+  // ===================================================
+  // GENERATE FORMULA + MODIFY EXCEL
+  // ===================================================
+
+  const generateFormula =
+    async () => {
+
+      // -----------------------------------------------
+      // CLEAR OLD DATA
+      // -----------------------------------------------
+
+      setError("");
+      setResult(null);
+
+
+      // -----------------------------------------------
+      // VALIDATE FILE
+      // -----------------------------------------------
+
+      if (!file) {
+
+        setError(
+          "Please upload an Excel file first."
+        );
+
+        return;
+      }
+
+
+      // -----------------------------------------------
+      // VALIDATE INSTRUCTION
+      // -----------------------------------------------
+
+      if (
+        !instruction.trim()
+      ) {
+
+        setError(
+          "Please describe what you want MoxelAI to do."
+        );
+
+        return;
+      }
+
+
+      // -----------------------------------------------
+      // START LOADING
+      // -----------------------------------------------
+
+      setIsProcessing(true);
+
+
+      try {
+
+        // ---------------------------------------------
+        // CREATE FORM DATA
+        // ---------------------------------------------
+
+        const formData =
+          new FormData();
+
+
+        formData.append(
+          "file",
+          file
+        );
+
+
+        formData.append(
+          "instruction",
+          instruction.trim()
+        );
+
+
+        console.log(
+          "Sending spreadsheet to MoxelAI..."
+        );
+
+
+        // ---------------------------------------------
+        // CALL EXPRESS BACKEND
+        // ---------------------------------------------
+
+        const response =
+          await fetch(
+            `${API_URL}/api/formula`,
+            {
+              method: "POST",
+              body: formData,
+            }
+          );
+
+
+        // ---------------------------------------------
+        // READ RESPONSE
+        // ---------------------------------------------
+
+        const responseText =
+          await response.text();
+
+
+        console.log(
+          "Backend response:",
+          responseText
+        );
+
+
+        let data;
+
+
+        try {
+
+          data =
+            JSON.parse(
+              responseText
+            );
+
+        } catch (parseError) {
+
+          console.error(
+            "JSON parsing failed:",
+            parseError
+          );
+
+
+          throw new Error(
+            "The backend returned an invalid response. Check your backend terminal."
+          );
+        }
+
+
+        // ---------------------------------------------
+        // CHECK HTTP STATUS
+        // ---------------------------------------------
+
+        if (!response.ok) {
+
+          throw new Error(
+            data?.error ||
+            `Server error: ${response.status}`
+          );
+        }
+
+
+        // ---------------------------------------------
+        // CHECK SUCCESS
+        // ---------------------------------------------
+
+        if (
+          !data.success
+        ) {
+
+          throw new Error(
+            data?.error ||
+            "MoxelAI could not process the spreadsheet."
+          );
+        }
+
+
+        // ---------------------------------------------
+        // SAVE RESULT
+        // ---------------------------------------------
+
+        setResult(data);
+
+
+        console.log(
+          "MoxelAI completed successfully."
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          "Formula generation error:",
+          error
+        );
+
+
+        setError(
+          error?.message ||
+          "Something went wrong while processing your Excel file."
+        );
+
+      } finally {
+
+        setIsProcessing(
+          false
+        );
+
+      }
+    };
+
+
+  // ===================================================
+  // RENDER
+  // ===================================================
+
   return (
-    <main className="min-h-screen bg-[#111312] text-[#F5F3ED]">
 
-      {/* ================= NAVBAR ================= */}
+    <main
+      className="
+        min-h-screen
+        bg-[#111312]
+        text-[#F5F3ED]
+      "
+    >
 
-      <header className="sticky top-0 z-50 border-b border-[#303733]/70 bg-[#111312]/90 backdrop-blur-xl">
+      {/* =================================================
+          HEADER
+      ================================================= */}
 
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
+      <header
+        className="
+          sticky
+          top-0
+          z-50
+          border-b
+          border-[#303733]
+          bg-[#111312]/95
+          backdrop-blur-xl
+        "
+      >
+
+        <div
+          className="
+            mx-auto
+            flex
+            h-16
+            max-w-7xl
+            items-center
+            justify-between
+            px-6
+          "
+        >
 
           {/* Logo */}
 
-          <Link href="/" className="flex items-center gap-3">
+          <div
+            className="
+              flex
+              items-center
+              gap-3
+            "
+          >
 
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2F6B4F] shadow-lg shadow-[#2F6B4F]/20">
-              <Table2 size={21} strokeWidth={2} />
+            <div
+              className="
+                flex
+                h-9
+                w-9
+                items-center
+                justify-center
+                rounded-xl
+                bg-[#2F6B4F]
+              "
+            >
+
+              <FileSpreadsheet
+                size={20}
+                strokeWidth={1.8}
+              />
+
             </div>
+
 
             <div>
-              <div className="text-xl font-bold tracking-tight">
-                Moxcel<span className="text-[#F2A07B]">AI</span>
+
+              <div
+                className="
+                  text-lg
+                  font-semibold
+                  tracking-tight
+                "
+              >
+
+                Moxel
+                <span
+                  className="
+                    text-[#F2A07B]
+                  "
+                >
+                  AI
+                </span>
+
               </div>
 
-              <div className="text-[9px] uppercase tracking-[0.2em] text-[#929A94]">
+
+              <div
+                className="
+                  text-[10px]
+                  uppercase
+                  tracking-[0.18em]
+                  text-[#929A94]
+                "
+              >
                 Intelligent spreadsheets
               </div>
+
             </div>
-
-          </Link>
-
-
-          {/* Desktop Navigation */}
-
-          <nav className="hidden items-center gap-8 md:flex">
-
-            <Link
-              href="/"
-              className="text-sm text-[#929A94] transition hover:text-[#F5F3ED]"
-            >
-              Home
-            </Link>
-
-            <Link
-              href="/formula"
-              className="text-sm font-medium text-[#F2A07B]"
-            >
-              Formula Generator
-            </Link>
-
-            <Link
-              href="/#features"
-              className="text-sm text-[#929A94] transition hover:text-[#F5F3ED]"
-            >
-              Features
-            </Link>
-
-            <Link
-              href="/#preview"
-              className="text-sm text-[#929A94] transition hover:text-[#F5F3ED]"
-            >
-              Preview
-            </Link>
-
-          </nav>
-
-
-          {/* Actions */}
-
-          <div className="hidden items-center gap-3 md:flex">
-
-            <Link
-              href="/login"
-              className="rounded-lg px-4 py-2.5 text-sm font-medium text-[#C8CEC9] transition hover:text-white"
-            >
-              Log in
-            </Link>
-
-            <Link
-              href="/signup"
-              className="flex items-center gap-2 rounded-lg bg-[#2F6B4F] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#3A815D]"
-            >
-              Get started
-              <ArrowRight size={15} />
-            </Link>
 
           </div>
 
 
-          {/* Mobile Menu */}
+          {/* Back button */}
 
           <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="rounded-lg border border-[#303733] p-2 text-[#C8CEC9] md:hidden"
+            onClick={() => {
+              window.location.href = "/";
+            }}
+            className="
+              flex
+              items-center
+              gap-2
+              rounded-lg
+              border
+              border-[#303733]
+              px-4
+              py-2
+              text-sm
+              text-[#929A94]
+              transition
+              hover:border-[#3A815D]
+              hover:text-[#F5F3ED]
+            "
           >
-            {menuOpen ? <X size={20} /> : <Menu size={20} />}
+
+            <ArrowLeft
+              size={16}
+            />
+
+            Back to home
+
           </button>
 
         </div>
 
-
-        {menuOpen && (
-
-          <div className="border-t border-[#303733] bg-[#111312] px-6 py-5 md:hidden">
-
-            <div className="flex flex-col gap-4">
-
-              <Link href="/" className="text-[#C8CEC9]">
-                Home
-              </Link>
-
-              <Link href="/formula" className="text-[#F2A07B]">
-                Formula Generator
-              </Link>
-
-              <Link href="/#features" className="text-[#C8CEC9]">
-                Features
-              </Link>
-
-              <Link href="/login" className="text-[#C8CEC9]">
-                Log in
-              </Link>
-
-              <Link
-                href="/signup"
-                className="rounded-lg bg-[#2F6B4F] px-4 py-3 text-center font-semibold"
-              >
-                Get started
-              </Link>
-
-            </div>
-
-          </div>
-
-        )}
-
       </header>
 
 
-      {/* ================= HERO ================= */}
+      {/* =================================================
+          PAGE CONTENT
+      ================================================= */}
 
-      <section className="relative overflow-hidden">
+      <section
+        className="
+          mx-auto
+          max-w-7xl
+          px-6
+          py-12
+        "
+      >
 
-        {/* Background glow */}
+        {/* =================================================
+            PAGE TITLE
+        ================================================= */}
 
-        <div className="absolute left-1/2 top-[-220px] h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-[#2F6B4F]/15 blur-[120px]" />
+        <div
+          className="
+            mx-auto
+            max-w-3xl
+            text-center
+          "
+        >
 
-        <div className="absolute right-[-100px] top-[250px] h-[300px] w-[300px] rounded-full bg-[#F2A07B]/8 blur-[120px]" />
-
-
-        <div className="relative mx-auto max-w-7xl px-6 pb-16 pt-16 lg:pb-20 lg:pt-20">
-
-          {/* Back */}
-
-          <Link
-            href="/"
-            className="mb-10 inline-flex items-center gap-2 text-sm text-[#929A94] transition hover:text-[#F2A07B]"
+          <div
+            className="
+              mx-auto
+              mb-5
+              flex
+              w-fit
+              items-center
+              gap-2
+              rounded-full
+              border
+              border-[#303733]
+              bg-[#191C1A]
+              px-4
+              py-2
+              text-sm
+              text-[#929A94]
+            "
           >
-            <ArrowLeft size={15} />
-            Back to workspace
-          </Link>
 
+            <Sparkles
+              size={15}
+              className="text-[#F2A07B]"
+            />
 
-          {/* Heading */}
-
-          <div className="mx-auto max-w-3xl text-center">
-
-            <div className="mx-auto flex w-fit items-center gap-2 rounded-full border border-[#2F6B4F]/50 bg-[#2F6B4F]/10 px-4 py-2 text-xs font-medium text-[#A9C7B4]">
-
-              <WandSparkles
-                size={14}
-                className="text-[#F2A07B]"
-              />
-
-              AI Formula Generator
-
-            </div>
-
-
-            <h1 className="mt-7 text-4xl font-bold tracking-[-0.04em] sm:text-5xl lg:text-6xl">
-
-              Describe it.
-
-              <br />
-
-              <span className="text-[#F2A07B]">
-                AI writes the formula.
-              </span>
-
-            </h1>
-
-
-            <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-[#929A94]">
-
-              Tell MoxcelAI what you want to calculate in plain
-              language. Get an accurate spreadsheet formula in
-              seconds.
-
-            </p>
+            AI-powered spreadsheet automation
 
           </div>
 
 
-          {/* ================= GENERATOR ================= */}
+          <h1
+            className="
+              text-4xl
+              font-semibold
+              tracking-tight
+              md:text-5xl
+            "
+          >
 
-          <div className="relative mx-auto mt-14 max-w-5xl">
+            Make your spreadsheet
+            <span
+              className="
+                block
+                text-[#F2A07B]
+              "
+            >
+              smarter with AI.
+            </span>
 
-            <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-[#2F6B4F]/20 via-[#F2A07B]/10 to-[#2F6B4F]/20 blur-xl" />
-
-            <div className="relative rounded-3xl border border-[#303733] bg-[#191C1A] p-5 shadow-2xl shadow-black/30 sm:p-7">
+          </h1>
 
 
-              {/* Generator Header */}
+          <p
+            className="
+              mx-auto
+              mt-5
+              max-w-2xl
+              text-base
+              leading-7
+              text-[#929A94]
+            "
+          >
 
-              <div className="flex items-center gap-3 border-b border-[#303733] pb-5">
+            Upload your real Excel spreadsheet,
+            describe what you want to calculate,
+            and MoxelAI will generate the formula
+            and apply the change to your workbook.
 
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2F6B4F]/15 text-[#F2A07B]">
-                  <Bot size={20} />
-                </div>
+          </p>
 
-                <div>
+        </div>
 
-                  <h2 className="text-sm font-semibold">
-                    Ask MoxcelAI
+
+        {/* =================================================
+            MAIN GRID
+        ================================================= */}
+
+        <div
+          className="
+            mx-auto
+            mt-12
+            grid
+            max-w-6xl
+            gap-6
+            lg:grid-cols-[1.05fr_0.95fr]
+          "
+        >
+
+
+          {/* =================================================
+              LEFT CARD
+          ================================================= */}
+
+          <div
+            className="
+              rounded-2xl
+              border
+              border-[#303733]
+              bg-[#151816]
+              p-6
+              shadow-2xl
+            "
+          >
+
+            {/* Card heading */}
+
+            <div
+              className="
+                mb-6
+                flex
+                items-start
+                justify-between
+              "
+            >
+
+              <div>
+
+                <div
+                  className="
+                    flex
+                    items-center
+                    gap-2
+                  "
+                >
+
+                  <WandSparkles
+                    size={19}
+                    className="text-[#F2A07B]"
+                  />
+
+                  <h2
+                    className="
+                      text-lg
+                      font-semibold
+                    "
+                  >
+                    Spreadsheet instruction
                   </h2>
 
-                  <p className="text-xs text-[#929A94]">
-                    Describe the formula you need
-                  </p>
-
-                </div>
-
-              </div>
-
-
-              {/* Controls */}
-
-              <div className="mt-6 grid gap-4 sm:grid-cols-2">
-
-                {/* Platform */}
-
-                <div>
-
-                  <label className="mb-2 block text-xs font-medium text-[#C8CEC9]">
-                    Spreadsheet platform
-                  </label>
-
-                  <div className="relative">
-
-                    <select
-                      value={platform}
-                      onChange={(e) => setPlatform(e.target.value)}
-                      className="w-full appearance-none rounded-lg border border-[#303733] bg-[#111312] px-4 py-3 text-sm text-[#C8CEC9] outline-none transition focus:border-[#2F6B4F]"
-                    >
-                      <option>Excel</option>
-                      <option>Google Sheets</option>
-                    </select>
-
-                    <ChevronDown
-                      size={16}
-                      className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#929A94]"
-                    />
-
-                  </div>
-
                 </div>
 
 
-                {/* Cell Range */}
-
-                <div>
-
-                  <label className="mb-2 block text-xs font-medium text-[#C8CEC9]">
-                    Cell or range
-                  </label>
-
-                  <input
-                    value={cellRange}
-                    onChange={(e) => setCellRange(e.target.value)}
-                    placeholder="Example: B2:B100"
-                    className="w-full rounded-lg border border-[#303733] bg-[#111312] px-4 py-3 text-sm text-[#C8CEC9] outline-none placeholder:text-[#626B65] transition focus:border-[#2F6B4F]"
-                  />
-
-                </div>
-
-              </div>
-
-
-              {/* Prompt */}
-
-              <div className="mt-5">
-
-                <label className="mb-2 block text-xs font-medium text-[#C8CEC9]">
-                  What do you want to calculate?
-                </label>
-
-                <div className="relative">
-
-                  <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Example: Calculate the total sales from B2 to B100..."
-                    rows={5}
-                    className="w-full resize-none rounded-xl border border-[#303733] bg-[#111312] px-4 py-4 text-sm leading-6 text-[#C8CEC9] outline-none placeholder:text-[#626B65] transition focus:border-[#2F6B4F]"
-                  />
-
-                  <div className="absolute bottom-3 right-3 text-[10px] text-[#626B65]">
-                    {description.length}/500
-                  </div>
-
-                </div>
-
-              </div>
-
-
-              {/* Examples */}
-
-              <div className="mt-4">
-
-                <p className="mb-2 text-[11px] font-medium text-[#929A94]">
-                  Try an example
+                <p
+                  className="
+                    mt-1
+                    text-sm
+                    text-[#929A94]
+                  "
+                >
+                  Tell MoxelAI what you want to do.
                 </p>
 
-                <div className="flex flex-wrap gap-2">
+              </div>
 
-                  {examples.map((example) => (
+            </div>
 
-                    <button
-                      key={example}
-                      onClick={() => setDescription(example)}
-                      className="rounded-md border border-[#303733] px-3 py-2 text-[11px] text-[#929A94] transition hover:border-[#F2A07B]/40 hover:text-[#F2A07B]"
-                    >
-                      {example}
-                    </button>
 
-                  ))}
+            {/* =================================================
+                INSTRUCTION
+            ================================================= */}
 
-                </div>
+            <label
+              className="
+                mb-2
+                block
+                text-sm
+                font-medium
+                text-[#F5F3ED]
+              "
+            >
+              What should MoxelAI do?
+            </label>
 
+
+            <textarea
+              value={instruction}
+              onChange={(event) =>
+                setInstruction(
+                  event.target.value
+                )
+              }
+              placeholder="
+Example: Calculate the total sales and put the result below the sales data.
+              "
+              rows={6}
+              className="
+                w-full
+                resize-none
+                rounded-xl
+                border
+                border-[#303733]
+                bg-[#111312]
+                px-4
+                py-4
+                text-sm
+                leading-6
+                text-[#F5F3ED]
+                outline-none
+                transition
+                placeholder:text-[#5F6862]
+                focus:border-[#3A815D]
+                focus:ring-1
+                focus:ring-[#3A815D]
+              "
+            />
+
+
+            {/* =================================================
+                EXAMPLES
+            ================================================= */}
+
+            <div className="mt-4">
+
+              <div
+                className="
+                  mb-2
+                  text-xs
+                  font-medium
+                  uppercase
+                  tracking-wider
+                  text-[#929A94]
+                "
+              >
+                Try an instruction
               </div>
 
 
-              {/* Generate */}
-
-              <button
-                onClick={generateFormula}
-                disabled={!description.trim() || loading}
-                className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-[#2F6B4F] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-[#3A815D] disabled:cursor-not-allowed disabled:opacity-50"
+              <div
+                className="
+                  flex
+                  flex-wrap
+                  gap-2
+                "
               >
 
-                {loading ? (
-                  <>
-                    <Sparkles
-                      size={16}
-                      className="animate-pulse"
-                    />
-                    Generating formula...
-                  </>
-                ) : (
-                  <>
-                    <WandSparkles size={16} />
-                    Generate Formula
-                  </>
-                )}
-
-              </button>
-
-
-              {/* ================= RESULT ================= */}
-
-              {formula && (
-
-                <div className="mt-6 overflow-hidden rounded-xl border border-[#2F6B4F]/40 bg-[#111312]">
-
-                  {/* Result Header */}
-
-                  <div className="flex items-center justify-between border-b border-[#303733] px-4 py-3">
-
-                    <div className="flex items-center gap-2">
-
-                      <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[#2F6B4F]/15 text-[#A9C7B4]">
-                        <Check size={15} />
-                      </div>
-
-                      <span className="text-xs font-semibold">
-                        Generated formula
-                      </span>
-
-                    </div>
-
+                {examplePrompts.map(
+                  (prompt) => (
 
                     <button
-                      onClick={copyFormula}
-                      className="flex items-center gap-2 rounded-md border border-[#303733] px-3 py-1.5 text-[11px] text-[#929A94] transition hover:border-[#F2A07B]/40 hover:text-[#F2A07B]"
+                      key={prompt}
+                      onClick={() =>
+                        selectExample(
+                          prompt
+                        )
+                      }
+                      className="
+                        rounded-lg
+                        border
+                        border-[#303733]
+                        bg-[#191C1A]
+                        px-3
+                        py-2
+                        text-xs
+                        text-[#929A94]
+                        transition
+                        hover:border-[#3A815D]
+                        hover:text-[#F5F3ED]
+                      "
                     >
 
-                      {copied ? (
-                        <>
-                          <Check size={13} />
-                          Copied
-                        </>
-                      ) : (
-                        <>
-                          <Copy size={13} />
-                          Copy
-                        </>
-                      )}
+                      {prompt}
 
                     </button>
 
+                  )
+                )}
+
+              </div>
+
+            </div>
+
+
+            {/* =================================================
+                FILE UPLOAD
+            ================================================= */}
+
+            <div
+              className="
+                mt-7
+              "
+            >
+
+              <label
+                className="
+                  mb-2
+                  block
+                  text-sm
+                  font-medium
+                "
+              >
+                Excel spreadsheet
+              </label>
+
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={
+                  handleFileChange
+                }
+                className="hidden"
+              />
+
+
+              {!file ? (
+
+                <button
+                  type="button"
+                  onClick={
+                    openFilePicker
+                  }
+                  className="
+                    group
+                    flex
+                    w-full
+                    cursor-pointer
+                    flex-col
+                    items-center
+                    justify-center
+                    rounded-xl
+                    border
+                    border-dashed
+                    border-[#3B453F]
+                    bg-[#111312]
+                    px-6
+                    py-9
+                    text-center
+                    transition
+                    hover:border-[#3A815D]
+                    hover:bg-[#191C1A]
+                  "
+                >
+
+                  <div
+                    className="
+                      mb-3
+                      flex
+                      h-12
+                      w-12
+                      items-center
+                      justify-center
+                      rounded-xl
+                      bg-[#2F6B4F]/20
+                      text-[#3A815D]
+                      transition
+                      group-hover:bg-[#2F6B4F]/30
+                    "
+                  >
+
+                    <Upload
+                      size={22}
+                    />
+
                   </div>
 
 
-                  {/* Formula */}
+                  <div
+                    className="
+                      text-sm
+                      font-medium
+                    "
+                  >
+                    Click to upload Excel
+                  </div>
 
-                  <div className="p-5">
 
-                    <div className="rounded-lg border border-[#303733] bg-[#191C1A] px-4 py-4">
+                  <div
+                    className="
+                      mt-1
+                      text-xs
+                      text-[#929A94]
+                    "
+                  >
+                    .xlsx or .xls · Maximum 10 MB
+                  </div>
 
-                      <code className="break-all text-sm font-medium text-[#F2A07B]">
-                        {formula}
-                      </code>
+                </button>
+
+              ) : (
+
+                <div
+                  className="
+                    flex
+                    items-center
+                    justify-between
+                    rounded-xl
+                    border
+                    border-[#2F6B4F]
+                    bg-[#2F6B4F]/10
+                    p-4
+                  "
+                >
+
+                  <div
+                    className="
+                      flex
+                      min-w-0
+                      items-center
+                      gap-3
+                    "
+                  >
+
+                    <div
+                      className="
+                        flex
+                        h-10
+                        w-10
+                        shrink-0
+                        items-center
+                        justify-center
+                        rounded-lg
+                        bg-[#2F6B4F]
+                      "
+                    >
+
+                      <FileSpreadsheet
+                        size={20}
+                      />
 
                     </div>
 
 
-                    {/* Explanation */}
+                    <div
+                      className="
+                        min-w-0
+                      "
+                    >
 
-                    <div className="mt-5 flex gap-3">
+                      <div
+                        className="
+                          truncate
+                          text-sm
+                          font-medium
+                        "
+                      >
 
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F2A07B]/10 text-[#F2A07B]">
-                        <Lightbulb size={16} />
+                        {file.name}
+
                       </div>
 
-                      <div>
 
-                        <p className="text-xs font-semibold text-[#F2A07B]">
-                          How it works
-                        </p>
+                      <div
+                        className="
+                          mt-1
+                          text-xs
+                          text-[#929A94]
+                        "
+                      >
 
-                        <p className="mt-1 text-xs leading-5 text-[#929A94]">
-                          MoxcelAI generated this {platform} formula
-                          using the range{" "}
-                          <span className="text-[#C8CEC9]">
-                            {cellRange}
-                          </span>
-                          . You can copy it directly into your
-                          spreadsheet.
-                        </p>
+                        {(
+                          file.size /
+                          1024 /
+                          1024
+                        ).toFixed(2)}
+                        {" "}
+                        MB
 
                       </div>
 
                     </div>
 
                   </div>
+
+
+                  <button
+                    type="button"
+                    onClick={
+                      removeFile
+                    }
+                    className="
+                      ml-3
+                      rounded-lg
+                      p-2
+                      text-[#929A94]
+                      transition
+                      hover:bg-[#303733]
+                      hover:text-[#F5F3ED]
+                    "
+                    title="Remove file"
+                  >
+
+                    <X
+                      size={18}
+                    />
+
+                  </button>
 
                 </div>
 
@@ -555,173 +1184,861 @@ export default function FormulaGenerator() {
 
             </div>
 
-          </div>
 
-        </div>
+            {/* =================================================
+                ERROR
+            ================================================= */}
 
-      </section>
+            {error && (
 
+              <div
+                className="
+                  mt-5
+                  flex
+                  items-start
+                  gap-3
+                  rounded-xl
+                  border
+                  border-red-900/60
+                  bg-red-950/20
+                  p-4
+                "
+              >
 
-      {/* ================= FEATURES ================= */}
+                <AlertCircle
+                  size={19}
+                  className="
+                    mt-0.5
+                    shrink-0
+                    text-red-400
+                  "
+                />
 
-      <section className="border-y border-[#303733] bg-[#151816] px-6 py-20">
-
-        <div className="mx-auto max-w-6xl">
-
-          <div className="text-center">
-
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#F2A07B]">
-              Formula intelligence
-            </p>
-
-            <h2 className="mt-3 text-3xl font-bold tracking-tight">
-              Work with formulas without memorizing them.
-            </h2>
-
-          </div>
-
-
-          <div className="mt-12 grid gap-5 md:grid-cols-3">
-
-            {[
-              {
-                icon: WandSparkles,
-                title: "Natural language",
-                text: "Explain what you want in simple words instead of remembering complex spreadsheet syntax.",
-              },
-              {
-                icon: Zap,
-                title: "Instant generation",
-                text: "Generate formulas quickly based on your cells, ranges and calculation requirements.",
-              },
-              {
-                icon: Lightbulb,
-                title: "Understand the formula",
-                text: "Get a simple explanation so you know exactly what the generated formula does.",
-              },
-            ].map((item) => {
-
-              const Icon = item.icon;
-
-              return (
 
                 <div
-                  key={item.title}
-                  className="rounded-2xl border border-[#303733] bg-[#191C1A] p-6 transition hover:-translate-y-1 hover:border-[#F2A07B]/30"
+                  className="
+                    text-sm
+                    leading-6
+                    text-red-300
+                  "
                 >
 
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#2F6B4F]/15 text-[#A9C7B4]">
-                    <Icon size={21} />
-                  </div>
-
-                  <h3 className="mt-5 font-semibold">
-                    {item.title}
-                  </h3>
-
-                  <p className="mt-2 text-sm leading-6 text-[#929A94]">
-                    {item.text}
-                  </p>
+                  {error}
 
                 </div>
 
-              );
+              </div>
 
-            })}
+            )}
+
+
+            {/* =================================================
+                ACTION BUTTON
+            ================================================= */}
+
+            <button
+              type="button"
+              onClick={
+                generateFormula
+              }
+              disabled={
+                isProcessing
+              }
+              className="
+                mt-6
+                flex
+                w-full
+                items-center
+                justify-center
+                gap-2
+                rounded-xl
+                bg-[#2F6B4F]
+                px-5
+                py-3.5
+                text-sm
+                font-semibold
+                text-white
+                transition
+                hover:bg-[#3A815D]
+                disabled:cursor-not-allowed
+                disabled:opacity-50
+              "
+            >
+
+              {isProcessing ? (
+
+                <>
+                  <Loader2
+                    size={18}
+                    className="animate-spin"
+                  />
+
+                  MoxelAI is analyzing
+                  your spreadsheet...
+
+                </>
+
+              ) : (
+
+                <>
+                  <Sparkles
+                    size={18}
+                  />
+
+                  Generate Formula & Update Excel
+
+                </>
+
+              )}
+
+            </button>
+
+
+            <div
+              className="
+                mt-3
+                text-center
+                text-xs
+                text-[#68716B]
+              "
+            >
+
+              Your spreadsheet is processed by
+              the MoxelAI backend.
+
+            </div>
 
           </div>
 
-        </div>
 
-      </section>
+          {/* =================================================
+              RIGHT CARD
+          ================================================= */}
 
+          <div
+            className="
+              rounded-2xl
+              border
+              border-[#303733]
+              bg-[#151816]
+              p-6
+            "
+          >
 
-      {/* ================= RECENT FORMULAS ================= */}
+            <div
+              className="
+                flex
+                items-center
+                gap-2
+              "
+            >
 
-      <section className="px-6 py-20">
+              <Calculator
+                size={19}
+                className="text-[#F2A07B]"
+              />
 
-        <div className="mx-auto max-w-6xl">
-
-          <div className="flex items-center justify-between">
-
-            <div>
-
-              <div className="flex items-center gap-2">
-
-                <History
-                  size={17}
-                  className="text-[#F2A07B]"
-                />
-
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#F2A07B]">
-                  History
-                </p>
-
-              </div>
-
-              <h2 className="mt-2 text-2xl font-bold">
-                Recent formulas
+              <h2
+                className="
+                  text-lg
+                  font-semibold
+                "
+              >
+                MoxelAI result
               </h2>
 
             </div>
 
-            <button className="text-xs text-[#929A94] transition hover:text-[#F2A07B]">
-              View all
-            </button>
 
-          </div>
+            <p
+              className="
+                mt-1
+                text-sm
+                text-[#929A94]
+              "
+            >
+              Your formula and spreadsheet changes
+              will appear here.
+            </p>
 
 
-          <div className="mt-7 overflow-hidden rounded-2xl border border-[#303733] bg-[#191C1A]">
+            {/* =================================================
+                EMPTY RESULT
+            ================================================= */}
 
-            {[
-              {
-                text: "Calculate total sales",
-                formula: "=SUM(B2:B100)",
-              },
-              {
-                text: "Find average sales",
-                formula: "=AVERAGE(B2:B100)",
-              },
-              {
-                text: "Find highest value",
-                formula: "=MAX(B2:B100)",
-              },
-            ].map((item, index) => (
+            {!result && !isProcessing && (
 
               <div
-                key={item.text}
-                className={`flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between ${
-                  index !== 2
-                    ? "border-b border-[#303733]"
-                    : ""
-                }`}
+                className="
+                  mt-8
+                  flex
+                  min-h-[380px]
+                  flex-col
+                  items-center
+                  justify-center
+                  rounded-xl
+                  border
+                  border-dashed
+                  border-[#303733]
+                  bg-[#111312]
+                  px-6
+                  text-center
+                "
               >
 
-                <div>
+                <div
+                  className="
+                    flex
+                    h-14
+                    w-14
+                    items-center
+                    justify-center
+                    rounded-2xl
+                    bg-[#191C1A]
+                    text-[#929A94]
+                  "
+                >
 
-                  <p className="text-sm font-medium text-[#C8CEC9]">
-                    {item.text}
-                  </p>
-
-                  <code className="mt-1 block text-xs text-[#F2A07B]">
-                    {item.formula}
-                  </code>
+                  <WandSparkles
+                    size={25}
+                  />
 
                 </div>
 
-                <button
-                  onClick={() =>
-                    navigator.clipboard.writeText(item.formula)
-                  }
-                  className="flex w-fit items-center gap-2 rounded-md border border-[#303733] px-3 py-2 text-[11px] text-[#929A94] transition hover:border-[#F2A07B]/40 hover:text-[#F2A07B]"
+
+                <h3
+                  className="
+                    mt-4
+                    text-sm
+                    font-medium
+                  "
                 >
-                  <Clipboard size={13} />
-                  Copy
+                  Nothing generated yet
+                </h3>
+
+
+                <p
+                  className="
+                    mt-2
+                    max-w-sm
+                    text-xs
+                    leading-5
+                    text-[#68716B]
+                  "
+                >
+
+                  Upload your Excel file,
+                  describe the operation,
+                  and MoxelAI will generate
+                  and apply the formula.
+
+                </p>
+
+              </div>
+
+            )}
+
+
+            {/* =================================================
+                LOADING
+            ================================================= */}
+
+            {isProcessing && (
+
+              <div
+                className="
+                  mt-8
+                  flex
+                  min-h-[380px]
+                  flex-col
+                  items-center
+                  justify-center
+                  rounded-xl
+                  border
+                  border-[#303733]
+                  bg-[#111312]
+                "
+              >
+
+                <Loader2
+                  size={35}
+                  className="
+                    animate-spin
+                    text-[#3A815D]
+                  "
+                />
+
+
+                <h3
+                  className="
+                    mt-5
+                    text-sm
+                    font-medium
+                  "
+                >
+                  Analyzing your workbook
+                </h3>
+
+
+                <p
+                  className="
+                    mt-2
+                    text-xs
+                    text-[#68716B]
+                  "
+                >
+                  Gemini is understanding your request...
+                </p>
+
+              </div>
+
+            )}
+
+
+            {/* =================================================
+                RESULT
+            ================================================= */}
+
+            {result && !isProcessing && (
+
+              <div
+                className="
+                  mt-7
+                  space-y-4
+                "
+              >
+
+                {/* Success */}
+
+                <div
+                  className="
+                    flex
+                    items-center
+                    gap-3
+                    rounded-xl
+                    border
+                    border-[#2F6B4F]
+                    bg-[#2F6B4F]/10
+                    p-4
+                  "
+                >
+
+                  <CheckCircle2
+                    size={20}
+                    className="text-[#5EA67B]"
+                  />
+
+
+                  <div>
+
+                    <div
+                      className="
+                        text-sm
+                        font-medium
+                      "
+                    >
+                      Spreadsheet updated
+                    </div>
+
+
+                    <div
+                      className="
+                        mt-1
+                        text-xs
+                        text-[#929A94]
+                      "
+                    >
+                      MoxelAI successfully applied
+                      the requested formula.
+                    </div>
+
+                  </div>
+
+                </div>
+
+
+                {/* Formula */}
+
+                <div>
+
+                  <div
+                    className="
+                      mb-2
+                      flex
+                      items-center
+                      justify-between
+                    "
+                  >
+
+                    <span
+                      className="
+                        text-xs
+                        font-medium
+                        uppercase
+                        tracking-wider
+                        text-[#929A94]
+                      "
+                    >
+                      Generated formula
+                    </span>
+
+
+                    <button
+                      type="button"
+                      onClick={
+                        copyFormula
+                      }
+                      className="
+                        flex
+                        items-center
+                        gap-1.5
+                        rounded-lg
+                        px-2.5
+                        py-1.5
+                        text-xs
+                        text-[#929A94]
+                        transition
+                        hover:bg-[#303733]
+                        hover:text-[#F5F3ED]
+                      "
+                    >
+
+                      {copied ? (
+
+                        <>
+                          <Check
+                            size={14}
+                          />
+
+                          Copied
+
+                        </>
+
+                      ) : (
+
+                        <>
+                          <Copy
+                            size={14}
+                          />
+
+                          Copy
+
+                        </>
+
+                      )}
+
+                    </button>
+
+                  </div>
+
+
+                  <div
+                    className="
+                      overflow-x-auto
+                      rounded-xl
+                      border
+                      border-[#303733]
+                      bg-[#0D0F0E]
+                      p-4
+                    "
+                  >
+
+                    <code
+                      className="
+                        text-base
+                        font-medium
+                        text-[#F2A07B]
+                      "
+                    >
+
+                      {result.formula}
+
+                    </code>
+
+                  </div>
+
+                </div>
+
+
+                {/* Sheet + Cell */}
+
+                <div
+                  className="
+                    grid
+                    grid-cols-2
+                    gap-3
+                  "
+                >
+
+                  <div
+                    className="
+                      rounded-xl
+                      border
+                      border-[#303733]
+                      bg-[#111312]
+                      p-4
+                    "
+                  >
+
+                    <div
+                      className="
+                        text-[11px]
+                        uppercase
+                        tracking-wider
+                        text-[#68716B]
+                      "
+                    >
+                      Sheet
+                    </div>
+
+
+                    <div
+                      className="
+                        mt-2
+                        truncate
+                        text-sm
+                        font-medium
+                      "
+                    >
+                      {result.sheet}
+                    </div>
+
+                  </div>
+
+
+                  <div
+                    className="
+                      rounded-xl
+                      border
+                      border-[#303733]
+                      bg-[#111312]
+                      p-4
+                    "
+                  >
+
+                    <div
+                      className="
+                        text-[11px]
+                        uppercase
+                        tracking-wider
+                        text-[#68716B]
+                      "
+                    >
+                      Updated cell
+                    </div>
+
+
+                    <div
+                      className="
+                        mt-2
+                        text-sm
+                        font-medium
+                        text-[#F2A07B]
+                      "
+                    >
+                      {result.targetCell}
+                    </div>
+
+                  </div>
+
+                </div>
+
+
+                {/* Explanation */}
+
+                <div
+                  className="
+                    rounded-xl
+                    border
+                    border-[#303733]
+                    bg-[#111312]
+                    p-4
+                  "
+                >
+
+                  <div
+                    className="
+                      text-[11px]
+                      uppercase
+                      tracking-wider
+                      text-[#68716B]
+                    "
+                  >
+                    What MoxelAI did
+                  </div>
+
+
+                  <p
+                    className="
+                      mt-2
+                      text-sm
+                      leading-6
+                      text-[#929A94]
+                    "
+                  >
+
+                    {result.explanation}
+
+                  </p>
+
+                </div>
+
+
+                {/* Download */}
+
+                <button
+                  type="button"
+                  onClick={
+                    downloadFile
+                  }
+                  className="
+                    flex
+                    w-full
+                    items-center
+                    justify-center
+                    gap-2
+                    rounded-xl
+                    bg-[#F2A07B]
+                    px-5
+                    py-3.5
+                    text-sm
+                    font-semibold
+                    text-[#111312]
+                    transition
+                    hover:bg-[#F5B08F]
+                  "
+                >
+
+                  <Download
+                    size={18}
+                  />
+
+                  Download Updated Excel
+
                 </button>
 
               </div>
 
-            ))}
+            )}
+
+          </div>
+
+        </div>
+
+
+        {/* =================================================
+            HOW IT WORKS
+        ================================================= */}
+
+        <div
+          className="
+            mx-auto
+            mt-12
+            max-w-6xl
+          "
+        >
+
+          <div
+            className="
+              mb-5
+              text-center
+            "
+          >
+
+            <h2
+              className="
+                text-xl
+                font-semibold
+              "
+            >
+              How MoxelAI works
+            </h2>
+
+            <p
+              className="
+                mt-2
+                text-sm
+                text-[#929A94]
+              "
+            >
+              From your instruction to an updated workbook.
+            </p>
+
+          </div>
+
+
+          <div
+            className="
+              grid
+              gap-4
+              md:grid-cols-3
+            "
+          >
+
+            {/* Step 1 */}
+
+            <div
+              className="
+                rounded-xl
+                border
+                border-[#303733]
+                bg-[#151816]
+                p-5
+              "
+            >
+
+              <div
+                className="
+                  mb-4
+                  flex
+                  h-9
+                  w-9
+                  items-center
+                  justify-center
+                  rounded-lg
+                  bg-[#2F6B4F]
+                  text-sm
+                  font-semibold
+                "
+              >
+                1
+              </div>
+
+
+              <h3
+                className="
+                  text-sm
+                  font-semibold
+                "
+              >
+                Upload
+              </h3>
+
+
+              <p
+                className="
+                  mt-2
+                  text-xs
+                  leading-5
+                  text-[#929A94]
+                "
+              >
+                Upload your actual Excel workbook.
+                MoxelAI reads its sheets and data structure.
+              </p>
+
+            </div>
+
+
+            {/* Step 2 */}
+
+            <div
+              className="
+                rounded-xl
+                border
+                border-[#303733]
+                bg-[#151816]
+                p-5
+              "
+            >
+
+              <div
+                className="
+                  mb-4
+                  flex
+                  h-9
+                  w-9
+                  items-center
+                  justify-center
+                  rounded-lg
+                  bg-[#2F6B4F]
+                  text-sm
+                  font-semibold
+                "
+              >
+                2
+              </div>
+
+
+              <h3
+                className="
+                  text-sm
+                  font-semibold
+                "
+              >
+                Describe
+              </h3>
+
+
+              <p
+                className="
+                  mt-2
+                  text-xs
+                  leading-5
+                  text-[#929A94]
+                "
+              >
+                Tell MoxelAI what you want,
+                using normal human language.
+              </p>
+
+            </div>
+
+
+            {/* Step 3 */}
+
+            <div
+              className="
+                rounded-xl
+                border
+                border-[#303733]
+                bg-[#151816]
+                p-5
+              "
+            >
+
+              <div
+                className="
+                  mb-4
+                  flex
+                  h-9
+                  w-9
+                  items-center
+                  justify-center
+                  rounded-lg
+                  bg-[#2F6B4F]
+                  text-sm
+                  font-semibold
+                "
+              >
+                3
+              </div>
+
+
+              <h3
+                className="
+                  text-sm
+                  font-semibold
+                "
+              >
+                Update
+              </h3>
+
+
+              <p
+                className="
+                  mt-2
+                  text-xs
+                  leading-5
+                  text-[#929A94]
+                "
+              >
+                Gemini generates the formula,
+                MoxelAI applies it, and you download
+                the updated workbook.
+              </p>
+
+            </div>
 
           </div>
 
@@ -730,27 +2047,39 @@ export default function FormulaGenerator() {
       </section>
 
 
-      {/* ================= FOOTER ================= */}
+      {/* =================================================
+          FOOTER
+      ================================================= */}
 
-      <footer className="border-t border-[#303733] px-6 py-8">
+      <footer
+        className="
+          border-t
+          border-[#303733]
+          px-6
+          py-7
+        "
+      >
 
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
+        <div
+          className="
+            mx-auto
+            flex
+            max-w-7xl
+            items-center
+            justify-between
+            text-xs
+            text-[#68716B]
+          "
+        >
 
-          <div className="flex items-center gap-2">
+          <span>
+            © {new Date().getFullYear()} MoxelAI
+          </span>
 
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[#2F6B4F]">
-              <Table2 size={14} />
-            </div>
 
-            <span className="text-sm font-semibold">
-              Moxcel<span className="text-[#F2A07B]">AI</span>
-            </span>
-
-          </div>
-
-          <p className="text-xs text-[#6F7973]">
-            AI-powered spreadsheet workspace
-          </p>
+          <span>
+            Intelligent spreadsheets
+          </span>
 
         </div>
 
