@@ -2,6 +2,10 @@ const express = require("express");
 const multer = require("multer");
 const XLSX = require("xlsx");
 const { GoogleGenAI } = require("@google/genai");
+const {
+  isCloudinaryConfigured,
+  uploadBufferToCloudinary,
+} = require("../config/cloudinary");
 
 const router = express.Router();
 
@@ -1084,6 +1088,30 @@ router.post(
       }
 
       /* ---------------------------------------------------
+         UPLOAD INPUT FILE TO CLOUDINARY
+      --------------------------------------------------- */
+
+      let inputCloudinary = null;
+      if (isCloudinaryConfigured()) {
+        try {
+          inputCloudinary = await uploadBufferToCloudinary(file.buffer, {
+            originalname: file.originalname,
+            mimetype: file.mimetype,
+            folder: "moxcel/formula_inputs",
+          });
+          console.log(
+            "[Cloudinary] Uploaded input file:",
+            inputCloudinary.secure_url
+          );
+        } catch (cloudErr) {
+          console.warn(
+            "[Cloudinary] Input upload error (continuing with local processing):",
+            cloudErr.message
+          );
+        }
+      }
+
+      /* ---------------------------------------------------
          INSTRUCTION
       --------------------------------------------------- */
 
@@ -1383,6 +1411,31 @@ RULES:
       const outputFileName =
         `${baseName}_MoxelAI.xlsx`;
 
+      /* ---------------------------------------------------
+         UPLOAD OUTPUT FILE TO CLOUDINARY
+      --------------------------------------------------- */
+
+      let outputCloudinary = null;
+      if (isCloudinaryConfigured()) {
+        try {
+          outputCloudinary = await uploadBufferToCloudinary(outputBuffer, {
+            originalname: outputFileName,
+            mimetype:
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            folder: "moxcel/formula_outputs",
+          });
+          console.log(
+            "[Cloudinary] Uploaded generated file:",
+            outputCloudinary.secure_url
+          );
+        } catch (cloudErr) {
+          console.warn(
+            "[Cloudinary] Output upload error:",
+            cloudErr.message
+          );
+        }
+      }
+
       /* ===================================================
          SUCCESS
       =================================================== */
@@ -1418,6 +1471,15 @@ RULES:
           outputFileName,
 
         fileBase64,
+
+        fileUrl:
+          outputCloudinary?.secure_url || null,
+
+        originalFileUrl:
+          inputCloudinary?.secure_url || null,
+
+        cloudinaryPublicId:
+          outputCloudinary?.public_id || null,
       });
     } catch (error) {
       console.error("");

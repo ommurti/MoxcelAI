@@ -63,6 +63,9 @@ const chatRouter =
 const formulaRouter =
   require("./router/formulaRouter");
 
+const uploadRouter =
+  require("./router/uploadRouter");
+
 
 // =====================================================
 // API ROUTES
@@ -79,6 +82,13 @@ app.use(
 app.use(
   "/api/formula",
   formulaRouter
+);
+
+
+// Cloudinary Upload & Media Management
+app.use(
+  "/api/upload",
+  uploadRouter
 );
 
 
@@ -230,6 +240,14 @@ app.listen(
 
     console.log(
       `POST http://localhost:${PORT}/api/formula`
+    );
+
+    console.log(
+      `GET  http://localhost:${PORT}/api/upload/status`
+    );
+
+    console.log(
+      `POST http://localhost:${PORT}/api/upload`
     );
 
     console.log(

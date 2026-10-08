@@ -2,6 +2,10 @@ const express = require("express");
 const multer = require("multer");
 const XLSX = require("xlsx");
 const { GoogleGenAI } = require("@google/genai");
+const {
+  isCloudinaryConfigured,
+  uploadBufferToCloudinary,
+} = require("../config/cloudinary");
 
 const router = express.Router();
 
@@ -124,6 +128,21 @@ router.post(
         });
       }
 
+      // Upload file to Cloudinary if configured
+      let cloudinaryResult = null;
+      if (isCloudinaryConfigured()) {
+        try {
+          cloudinaryResult = await uploadBufferToCloudinary(req.file.buffer, {
+            originalname: req.file.originalname,
+            mimetype: req.file.mimetype,
+            folder: "moxcel/chat_uploads",
+          });
+          console.log("[Cloudinary] Uploaded chat file:", cloudinaryResult.secure_url);
+        } catch (cloudErr) {
+          console.warn("[Cloudinary] Upload failed, proceeding with local parsing:", cloudErr.message);
+        }
+      }
+
       const workbook = XLSX.read(req.file.buffer, {
         type: "buffer",
         cellDates: true,
@@ -155,6 +174,8 @@ router.post(
       const workbookData = {
         id: workbookId,
         fileName: req.file.originalname,
+        fileUrl: cloudinaryResult?.secure_url || null,
+        cloudinaryPublicId: cloudinaryResult?.public_id || null,
         sheets,
         createdAt: new Date(),
       };
@@ -167,6 +188,8 @@ router.post(
         success: true,
         workbookId,
         fileName: req.file.originalname,
+        fileUrl: cloudinaryResult?.secure_url || null,
+        cloudinaryPublicId: cloudinaryResult?.public_id || null,
         sheets: summary,
       });
     } catch (error) {
@@ -213,6 +236,8 @@ router.get("/workbook/:workbookId", (req, res) => {
     return res.json({
       success: true,
       fileName: workbook.fileName,
+      fileUrl: workbook.fileUrl || null,
+      cloudinaryPublicId: workbook.cloudinaryPublicId || null,
       sheets,
     });
   } catch (error) {
