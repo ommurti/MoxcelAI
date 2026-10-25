@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import * as XLSX from "xlsx";
 import {
   ArrowRight,
   BarChart3,

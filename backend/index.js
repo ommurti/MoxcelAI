@@ -66,6 +66,8 @@ const formulaRouter =
 const uploadRouter =
   require("./router/uploadRouter");
 
+const manipulationRouter = require("./router/manipulationRouter");
+
 
 // =====================================================
 // API ROUTES
@@ -90,6 +92,8 @@ app.use(
   "/api/upload",
   uploadRouter
 );
+
+app.use("/api/manipulation", manipulationRouter);
 
 
 // =====================================================
@@ -248,6 +252,10 @@ app.listen(
 
     console.log(
       `POST http://localhost:${PORT}/api/upload`
+    );
+
+    console.log(
+      `POST http://localhost:${PORT}/api/manipulation`
     );
 
     console.log(
